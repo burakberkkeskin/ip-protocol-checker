@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --popup-width: 575px;
+      --domain-col-width: 190px;
+      --ip-col-width: 270px;
+      --proto-col-width: 96px;
+      --bg: #f7f4ef;
+      --surface: #ffffff;
+      --surface-strong: #f1ece3;
+      --text: #202124;
+      --muted: #68625a;
+      --border: #ddd4c7;
+      --v4: #c43c2f;
+      --v6: #18865c;
+      --local: #2176ae;
+      --shadow: rgba(32, 33, 36, 0.12);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #171a18;
+        --surface: #222621;
+        --surface-strong: #2c332c;
+        --text: #edf0ea;
+        --muted: #a8afa4;
+        --border: #3b453b;
+        --v4: #ff7569;
+        --v6: #55d08f;
+        --local: #6ab9ed;
+        --shadow: rgba(0, 0, 0, 0.28);
+      }
+    }
+
+    html {
+      background-color: var(--bg);
+      height: 600px;
+      overflow: hidden;
+      width: fit-content;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+      margin: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      width: var(--popup-width);
+    }
+
+    .top-panel {
+      flex: 0 0 auto;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 10px 22px color-mix(in srgb, var(--bg) 88%, transparent);
+      padding: 14px 14px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 3;
+    }
+
+    .top-bar {
+      align-items: center;
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .language-select {
+      appearance: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      outline: none;
+      padding: 6px 28px 6px 9px;
+    }
+    
+    .summary {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .card {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 12px;
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 6px 18px var(--shadow);
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                  filter 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--shadow);
+      border-color: var(--muted);
+    }
+
+    .card:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 10px var(--shadow);
+    }
+
+    .card:focus-visible {
+      outline: 2px solid var(--local);
+      outline-offset: 2px;
+    }
+
+    .summary.has-active .card:not(.active) {
+      opacity: 0.55;
+      filter: grayscale(40%);
+    }
+
+    .summary.has-active .card:not(.active):hover {
+      opacity: 0.85;
+      filter: grayscale(10%);
+    }
+
+    #card-v4.active {
+      border-color: var(--v4);
+      box-shadow: 0 0 0 1px var(--v4), 0 6px 18px var(--shadow);
+      background-color: color-mix(in srgb, var(--v4) 6%, var(--surface));
+    }
+
+    #card-v6.active {
+      border-color: var(--v6);
+      box-shadow: 0 0 0 1px var(--v6), 0 6px 18px var(--shadow);
+      background-color: color-mix(in srgb, var(--v6) 6%, var(--surface));
+    }
+
+    #card-local.active {
+      border-color: var(--local);
+      box-shadow: 0 0 0 1px var(--local), 0 6px 18px var(--shadow);
+      background-color: color-mix(in srgb, var(--local) 6%, var(--surface));
+    }
+
+    .card-label {
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .card-count {
+      display: block;
+      font-size: 20px;
+      margin-top: 5px;
+    }
+
+    .percent {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 3px;
+    }
+
+    .meter {
+      background: var(--surface-strong);
+      border-radius: 999px;
+      height: 6px;
+      margin-top: 9px;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      border-radius: inherit;
+      height: 100%;
+      width: 0%;
+      transition: width 160ms ease;
+    }
+
+    .v6-text { color: var(--v6); }
+    .v4-text { color: var(--v4); }
+    .local-text { color: var(--local); }
+    .v6-fill { background: var(--v6); }
+    .v4-fill { background: var(--v4); }
+    .local-fill { background: var(--local); }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 0;
+    }
+
+    .toolbar-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      width: 36px;
+      padding: 0;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+      flex-shrink: 0;
+    }
+
+    .toolbar-btn:hover {
+      background: var(--surface-strong);
+      border-color: var(--muted);
+      transform: translateY(-1px);
+    }
+
+    .toolbar-btn:active {
+      transform: translateY(1px);
+    }
+
+    .toolbar-btn.active {
+      background: color-mix(in srgb, var(--local) 10%, var(--surface));
+      border-color: var(--local);
+      color: var(--local);
+    }
+
+    .search-input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-sizing: border-box;
+      color: var(--text);
+      font: inherit;
+      outline: none;
+      padding: 9px 11px;
+      width: 100%;
+    }
+
+    .search-input:focus {
+      border-color: var(--local);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--local) 22%, transparent);
+    }
+
+    .table-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 0 14px 14px;
+      scrollbar-gutter: stable;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      table-layout: fixed;
+    }
+
+    th, td {
+      padding: 10px 4px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 500;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 2;
+    }
+    
+    .domain-col {
+      width: var(--domain-col-width);
+    }
+
+    .ip-col {
+      width: var(--ip-col-width);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .proto-col {
+      width: var(--proto-col-width);
+      text-align: right;
+    }
+
+    .domain-content {
+      align-items: baseline;
+      display: flex;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .domain-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .badge {
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      display: inline-block;
+    }
+
+    .bg-v6 { background: color-mix(in srgb, var(--v6) 18%, transparent); color: var(--v6); }
+    .bg-v4 { background: color-mix(in srgb, var(--v4) 18%, transparent); color: var(--v4); }
+    .bg-local { background: color-mix(in srgb, var(--local) 18%, transparent); color: var(--local); margin-left: 4px; }
+
+    .request-count {
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .ip-button {
+      all: unset;
+      color: inherit;
+      cursor: pointer;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      text-underline-offset: 3px;
+      white-space: nowrap;
+    }
+
+    .lookup-row td {
+      background: var(--surface);
+      color: var(--muted);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .lookup-panel {
+      display: grid;
+      gap: 7px;
+      padding: 2px 0;
+    }
+
+    .lookup-item {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 10px;
+      align-items: baseline;
+    }
+
+    .lookup-label {
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: 0.04em;
+    }
+
+    .lookup-value {
+      color: var(--text);
+      word-break: break-word;
+    }
+    
+    .empty-state { text-align: center; color: var(--muted); padding: 40px 0; }
+
+    /* Visual Protocol Accent Borders */
+    tr.proto-v4 td:first-child {
+      border-left: 3px solid var(--v4);
+    }
+    tr.proto-v6 td:first-child {
+      border-left: 3px solid var(--v6);
+    }
+    tr.proto-local td:first-child {
+      border-left: 3px solid var(--local);
+    }
+    tr.proto-dual td:first-child {
+      border-left: 3px solid var(--border);
+    }
+    td:first-child {
+      padding-left: 8px;
+    }
+
+    /* Party Badge Styles */
+    .party-badge {
+      align-self: center;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      margin-left: 6px;
+      padding: 1.5px 5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+      display: inline-block;
+    }
+    .party-badge.first-party {
+      background: color-mix(in srgb, var(--local) 10%, transparent);
+      color: var(--local);
+    }
+    .party-badge.third-party {
+      background: color-mix(in srgb, var(--muted) 12%, transparent);
+      color: var(--muted);
+    }
+    .party-badge.dual-stack {
+      background: color-mix(in srgb, var(--text) 10%, transparent);
+      color: var(--text);
+    }
+
+    /* Collapsible Child Row Styles */
+    tr.child-row {
+      background-color: color-mix(in srgb, var(--bg) 30%, var(--surface));
+    }
+    tr.child-row.hidden {
+      display: none;
+    }
+    tr.child-row td:first-child {
+      padding-left: 22px;
+      position: relative;
+    }
+    tr.child-row td:first-child::before {
+      content: "└─";
+      color: var(--border);
+      margin-right: 6px;
+      font-family: monospace;
+      font-weight: normal;
+    }
+    .expand-icon {
+      cursor: pointer;
+      display: inline-block;
+      font-size: 9px;
+      margin-right: 6px;
+      transition: transform 0.2s ease;
+      user-select: none;
+      width: 10px;
+      text-align: center;
+      color: var(--muted);
+    }
+    tr.expanded .expand-icon {
+      transform: rotate(90deg);
+    }
+    tr.expandable {
+      cursor: pointer;
+    }
+    tr.expandable:hover td {
+      background-color: var(--surface-strong);
+    }
+
+    /* Sortable Header Styles */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    th.sortable:hover {
+      background-color: var(--surface-strong);
+      color: var(--text);
+    }
+    .sort-indicator {
+      display: inline-block;
+      margin-left: 5px;
+      font-size: 10px;
+      vertical-align: middle;
+      font-family: system-ui;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-panel">
+    <div class="top-bar">
+      <select id="language-select" class="language-select" aria-label="Language">
+        <option value="en">English</option>
+        <option value="tr">Turkce</option>
+      </select>
+    </div>
+
+    <div class="summary" id="summary-container">
+      <div class="card" id="card-v4" role="button" tabindex="0" aria-pressed="false">
+        <div class="card-label">IPv4 <span id="pct-v4">0%</span></div>
+        <span id="count-v4" class="card-count v4-text">0</span>
+        <div class="meter"><div id="bar-v4" class="meter-fill v4-fill"></div></div>
+      </div>
+      <div class="card" id="card-v6" role="button" tabindex="0" aria-pressed="false">
+        <div class="card-label">IPv6 <span id="pct-v6">0%</span></div>
+        <span id="count-v6" class="card-count v6-text">0</span>
+        <div class="meter"><div id="bar-v6" class="meter-fill v6-fill"></div></div>
+      </div>
+      <div class="card" id="card-local" role="button" tabindex="0" aria-pressed="false">
+        <div class="card-label"><span data-i18n="summary.local">Local</span> <span id="pct-local">0%</span></div>
+        <span id="count-local" class="card-count local-text">0</span>
+        <div class="meter"><div id="bar-local" class="meter-fill local-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input id="filter-input" class="search-input" type="search" data-i18n-placeholder="filter.placeholder" placeholder="Search domain, IP, IPv4, IPv6 or LAN">
+      <button id="view-mode-btn" class="toolbar-btn" type="button" data-i18n-title="tooltip.viewMode" title="Toggle Grouped/Flat View">
+        <span id="view-mode-icon">📁</span>
+      </button>
+      <button id="party-filter-btn" class="toolbar-btn" type="button" data-i18n-title="tooltip.partyFilter" title="Filter: All / First-Party / Third-Party">
+        <span id="party-filter-icon">🌐</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="domain-col sortable" id="th-domain" role="columnheader" tabindex="0">
+            <span data-i18n="table.domain">Domain</span><span class="sort-indicator" id="sort-domain"></span>
+          </th>
+          <th class="ip-col sortable" id="th-ip" role="columnheader" tabindex="0">
+            <span data-i18n="table.ip">Resolved IP</span><span class="sort-indicator" id="sort-ip"></span>
+          </th>
+          <th class="proto-col sortable" id="th-proto" role="columnheader" tabindex="0">
+            <span data-i18n="table.protocol">Protocol</span><span class="sort-indicator" id="sort-proto"></span>
+          </th>
+        </tr>
+      </thead>
+      <tbody id="domain-list">
+        <tr><td colspan="3" class="empty-state" data-i18n="state.waiting">Waiting for connection data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

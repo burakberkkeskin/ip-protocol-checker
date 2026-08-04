@@ -1,0 +1,29 @@
+name: Release Extension ZIP
+
+on:
+  push:
+    tags:
+      - 'v*' # trigger workflow only for tags starting with 'v' (e.g., v1.0.0)
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # GitHub token permission to create releases
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Create Extension ZIP
+        run: |
+          zip -r ip-protocol-tracker.zip manifest.json background.js popup.html popup.js locales/ icons/
+
+      - name: Create GitHub Release & Upload Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ip-protocol-tracker.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

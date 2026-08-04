@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "IP Protocol Tracker",
+  "version": "1.3",
+  "description": "Tracks tab-level public and local IPv4/IPv6 traffic.",
+  "permissions": [
+    "webRequest",
+    "webNavigation",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "IP Statistics"
+  }
+}
